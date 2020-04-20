@@ -5,30 +5,27 @@ GCJ02：又称火星坐标系，是由中国国家测绘局制订的地理信息
 BD09：为百度坐标系，在GCJ02坐标系基础上再次加密。其中bd09ll表示百度经纬度坐标，bd09mc表示百度墨卡托米制坐标。
 使用OpenStreetMap的坐标为WGS84；使用高德地图、腾讯地图的坐标为GCJ02；使用百度地图的坐标为BD09；谷歌地图和Bing地图的中国部分采用了高德地图的数据，所以坐标为GCJ02
 
+
+谷歌XYZ：Z表示缩放层级，Z=zoom；XY的原点在左上角，X从左向右，Y从上向下。
+TMS：开源产品的标准，Z的定义与谷歌相同；XY的原点在左下角，X从左向右，Y从下向上。
+QuadTree：微软Bing地图使用的编码规范，Z的定义与谷歌相同，同一层级的瓦片不用XY两个维度表示，而只用一个整数表示，该整数服从四叉树编码规则
+百度XYZ：Z从1开始，在最高级就把地图分为四块瓦片；XY的原点在经度为0纬度位0的位置，X从左向右，Y从下向上。
 */
 var Mercator = function(){
 
 }
-Mercator.toPixed2 = function( lon,lat  ){
-	var x = lon * Mercator.EARTH_WIDTH /180;
-	var y= Math.log(Math.tan((90+lat)*PI/360))/(PI/180);
-    y = y * Mercator.EARTH_HEIGHT/180;
-    return {x:x,y:y}
-}
-
 Mercator.toPixed = function( lon,lat  ){
-    var earthRad = 6378137.0;
-    var x = lon * Math.PI / 180 * earthRad;
-    var a = lat * Math.PI / 180;
-    var y = earthRad / 2 * Math.log((1.0 + Math.sin(a)) / (1.0 - Math.sin(a)));
+	var x = lon * Mercator.EARTH_HALF_C /180;
+	var y= Math.log(Math.tan((90+lat)*PI/360))/(PI/180);
+    y = y * Mercator.EARTH_HALF_C/180;
     return {x:x,y:y}
 }
 //[-180, 180], 纬度为[-85.05112877980659，85.05112877980659
 
 Mercator.toLonLat = function( x, y ){
-    var lon = x / Mercator.EARTH_WIDTH * 180;
-    var lat = y / Mercator.EARTH_HEIGHT * 180;
-    lat = 180/PI*(2*Math.atan(Math.exp(y*PI/180)) - PI/2);
+    var lon = x / Mercator.EARTH_HALF_C * 180;
+    var lat = y / Mercator.EARTH_HALF_C * 180;
+    lat = 180/PI*(2*Math.atan(Math.exp(lat*PI/180)) - PI/2);
     return {
     	lon:lon,lat:lat
     }
@@ -78,8 +75,8 @@ Mercator.BD09_GCJ02  = function( lon, lat ){
     var amap_lat = z * math.sin(theta);
     return {lon:amap_lon,lat:amap_lat};
 }
-Mercator.EARTH_WIDTH = 20037508.34;
-Mercator.EARTH_HEIGHT = 20037508.34;
+//地球半周长
+Mercator.EARTH_HALF_C = 20037508.34;
 
 
 /** 
@@ -89,6 +86,7 @@ Mercator.EARTH_HEIGHT = 20037508.34;
 */
 var GpsCorrect = function(){}
 GpsCorrect.outOfChina = function( lon, lat ){
+    return true;
     if( lon < 72.004 || lon > 137.8347 ){
         return true;
     }

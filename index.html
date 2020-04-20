@@ -25,14 +25,22 @@
             left: 0;
             top: 0;
         }
+        .tile{
+            border:1px solid #00cc00;
+            display: inline-block;
+            width: 256px;
+            height: 256px;
+        }
     </style>
     <script type="text/javascript" src="Mercator.js"></script>
     <script type="text/javascript" src="./index.js"></script>
+
 </head>
 <body>
     <div class="map" id="map">
     </div>
     <div id="maptile">
+        <button onclick="setMapTile('local')")>local</button>
         <button onclick="setMapTile('google2')">google2</button>
         <button onclick="setMapTile('google')">google</button>
         <button onclick="setMapTile('openstreetmap')">openstreetmap</button>
@@ -92,14 +100,20 @@
                     
                     break;
                 case 'map.geoq.cn':
-                    map.setLayer({
-                        url:"http://map.geoq.cn/ArcGIS/rest/services/ChinaOnlineStreetWarm/MapServer/tile/{z}/{y}/{x}"
-                    })
+                    
                     break;
+                    break;
+                case 'local':
+                
+                    map.setLayer({
+                        url:"./googlemaps/satellite/{z}/{x}/{y}.jpg"
+                    })
                     break;
             }
         }
     </script>
+
+    <script type="text/javascript" src="./events.js"></script>
 </div>
 
     

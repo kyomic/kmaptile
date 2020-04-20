@@ -1,3 +1,8 @@
+/**
+ * @constructor
+ * @param {Map} map  地图实例
+ * @param {object} option 图层选项，如:{url}
+ */
 function MapLayer( map, option ){
 	var layer = document.createElement("div");
 	layer.className = "mlayer"
@@ -6,19 +11,40 @@ function MapLayer( map, option ){
 	this.option = option || {};
 }
 
+/**
+ * @method loadTile
+ * @param {Tile} tile 单格块
+ */
 MapLayer.prototype.loadTile = function( tile ){
 	if( this.option.url ){
 		tile.url = this.option.url;
 	}
 	var source = tile.getSource();
+	source.title = [tile.x,tile.y,tile.z].join('_');
 	source.className = 'tile'
 	source.style.cssText = 'left:' + (tile.xpos) + 'px;top:' + (tile.ypos) + 'px'
 	this.root.appendChild( source );
 }
+/**
+ * 清空图层底图
+ */
 MapLayer.prototype.clear = function(){
 	this.root.innerHTML = '';
 }
 
+/**
+ * 销毁
+ */
+
+MapLayer.prototype.destroy = function(){
+	if( this.root ){
+		this.clear();
+		try{
+			this.root.parentNode.removeChild( this.root );
+		}catch(e){}
+	}	
+	this.root = null;
+}
 function Map( dom ){
 	this.root = typeof dom =='string'?document.getElementById( dom ):dom;
 	this.root.innerHTML = [
@@ -39,9 +65,9 @@ function Map( dom ){
 	 */
 }
 Map.prototype.initialize = function(){
-	var earth_width = Mercator.EARTH_WIDTH;
+	var earth_width = Mercator.EARTH_HALF_C;
 	this.resolutions = [];
-	for(var i=0;i<this.maxLevel;i++){
+	for(var i=0;i<=this.maxLevel;i++){
 		this.resolutions[i] = earth_width * 2 / this.tileSize / ( Math.pow(2, i ));
 	}
 	this.mapLayers["default"] = new MapLayer( this );
@@ -51,6 +77,9 @@ Map.prototype.getLayer = function(){
 	return this.mapLayers['default'];
 }
 Map.prototype.setLayer = function( option ){
+	try{
+		this.mapLayers['default'].destroy();
+	}catch(e){}
 	var layer = new MapLayer( this, option );
 	this.mapLayers['default'] = layer;
 	this._draw();
@@ -67,11 +96,12 @@ var LonLat = function(){
 			this.lat = arguments[0].lat;
 		}
 	}
-	console.log("原始经纬度", this.lon,this.lat )
+	//console.log("原始经纬度", this.lon,this.lat )
 	var trans = GpsCorrect.transform( this.lon, this.lat );
 	this.lat = trans.lat;
 	this.lon = trans.lon;
-	console.log("新始经纬度", this.lon,this.lat )
+	//console.log("新始经纬度", this.lon,this.lat )
+	return;
 	if( !this.x ){
 		var p = Mercator.toPixed( this.lon,this.lat );
 		this.x = p.x;
@@ -79,30 +109,100 @@ var LonLat = function(){
 	}
 
 }
+
+/**
+ * @method centerAndZoom
+ * @param {LonLat} center - 地图点对象
+ * @param {number} zoom - 缩放级别
+ */
 Map.prototype.centerAndZoom = function( center, zoom ){
 	this._center = center;
 	this._zoom = zoom || 12;
-	console.log("localPt:", this._center)
-	//console.log( Mercator.toPixed( -180,-85.05112877980659),Mercator.toPixed(180,85.05112877980659))
-	//console.log( Mercator.toLonLat( -Mercator.EARTH_WIDTH,-Mercator.EARTH_WIDTH),Mercator.toLonLat(Mercator.EARTH_WIDTH,Mercator.EARTH_WIDTH))
-	console.log( this.LonLat2TileXY( this._center.lon, this._center.lat ))
+	
+	this._debugPt();
 	this._draw();
 }
 
-Map.prototype.LonLat2TileXY = function( lon, lat ){
-	var n = Math.pow(2, this._zoom);
-	var radius = Math.PI / 180;
-    var tileX = ((lon + 180) / 360) * n;
-    var tileY = (1 - (Math.log(Math.tan(radius * lat ) + (1 / Math.cos(radius*lat))) / Math.PI)) / 2 * n;
-    return {
-    	x:tileX,y:tileY
-    }
+Map.prototype._debugPt = function(){
+	console.log("初始经纬度:", this._center.lon, this._center.lat, this._zoom)
+	
+	console.log( Mercator.toPixed( -180,-85.05112877980659),Mercator.toPixed(180,85.05112877980659))
+	console.log( Mercator.toLonLat( -Mercator.EARTH_HALF_C,-Mercator.EARTH_HALF_C),Mercator.toLonLat(Mercator.EARTH_HALF_C,Mercator.EARTH_HALF_C))
+	
+	console.log("Tile坐标")
+	var xy = this.TileLonLat2XY( this._center.lon, this._center.lat );
+	console.log("xy", xy)
+	console.log(this.TileXY2LonLat(xy.x,xy.y))
+	console.log("像素坐标")
+	xy = Mercator.toPixed( this._center.lon, this._center.lat );
+	console.log("xy", xy)
+	console.log(Mercator.toLonLat(xy.x,xy.y))
+	return;
+}
+
+Map.prototype.panTo = function( offsetx, offsety ){
+	var pt = Mercator.toPixed( this._center.lon, this._center.lat );	
+	pt.x += offsetx * this.resolutions[this._zoom];
+	pt.y += offsety * this.resolutions[this._zoom];	
+	pt = Mercator.toLonLat( pt.x, pt.y );
+	this._center = new LonLat( pt.lon, pt.lat );
+	console.log("newCenter:", this._center)
+	this._draw();
+}
+
+Map.prototype.zoomIn = function( pt, offsetLevel ){
+	offsetLevel = offsetLevel || 1;
+	var centerX = this.viewWidth / 2;
+	var centerY = this.viewHeight / 2;
+	var zoom = Math.pow(2,offsetLevel);
+	if( typeof pt == 'undefined' ){
+		pt = {x:centerX,y:centerY}
+	}
+	var x = (centerX - pt.x)* zoom/2;
+	var y = (centerY - pt.y)* zoom/2;
+	//this.layerroot.style.cssText = 'transform:translate('+x+'px,'+y+'px) scale(2)';
+	this.layerroot.style.cssText = 'transform:scale('+zoom+');left:'+ x +'px;top:'+y+'px';
+	this._zoom += 1;
+	if( this._zoom >= this.maxLevel ){
+		this._zoom = this.maxLevel;
+		this.panTo( x, y )
+		return;
+	}
+	this.panTo( x, y )
+
+}
+
+Map.prototype.zoomOut = function( pt, offsetLevel ){
+	offsetLevel = offsetLevel || 2;
+	var centerX = this.viewWidth / 2;
+	var centerY = this.viewHeight / 2;
+	var zoom = 1/ offsetLevel;
+	if( typeof pt == 'undefined'){
+		pt = {x:centerX,y:centerY}
+	}
+	var x = -(centerX - pt.x) * zoom;
+	var y = -(centerY - pt.y) * zoom;
+	//this.layerroot.style.cssText = 'transform:translate('+x+'px,'+y+'px) scale(2)';
+	this.layerroot.style.cssText = 'transform:scale('+zoom+');left:'+ x +'px;top:'+y+'px';
+	this._zoom -= 1;
+	if( this._zoom <= 0 ){
+		this._zoom = 0;
+		this.panTo( x, y )
+		return;
+	}
+	this.panTo( x, y )
+}
+Map.prototype.TileLonLat2XY = function( lon, lat ){
+	var z = this._zoom;
+	var x = (lon+180)/360*Math.pow(2,z);
+	var y = (1-Math.log(Math.tan(lat*Math.PI/180) + 1/Math.cos(lat*Math.PI/180))/Math.PI)/2 *Math.pow(2,z);
+	return {x:x,y:y}
 }
 Map.prototype.TileXY2LonLat = function( x, y ){
-	var n = Math.pow(2, this._zoom);
-    var lon = x / n * 360.0 - 180.0;
-    var lat = Math.atan(Math.sin(Math.PI * (1 - 2 * y / n)));
-    lat = lat * 180.0 / Math.PI;
+	var z = this._zoom;
+    var lon = (x/Math.pow(2,z)*360-180);
+    var n=Math.PI-2*Math.PI*y/Math.pow(2,z);
+  	lat = (180/Math.PI*Math.atan(0.5*(Math.exp(n)-Math.exp(-n))));
     return {lon:lon,lat:lat}
 }
 /*
@@ -128,25 +228,32 @@ Map.prototype.XY2LonLat = function( x, y ){
 
 Map.prototype._draw = function(){
 	this.clear();
+	this.layerroot.style.cssText = '';
 	var maxX = Math.ceil(this.viewWidth / this.tileSize/2);
 	var maxY = Math.ceil(this.viewHeight / this.tileSize/2);
 
-	var pt = this.LonLat2TileXY( this._center.lon, this._center.lat );
+	var pt = this.TileLonLat2XY( this._center.lon, this._center.lat );
+	var globalPt = Mercator.toPixed( this._center.lon, this._center.lat );
 	var x = pt.x, y = pt.y;
 	var startX = Math.floor(x-maxX)
 	var startY = Math.floor(y-maxY)
+
+	var offsetX = Math.random()*100;
+	console.log("tileX===", pt.x, pt.y, 'globalPt', globalPt)
 	for(var i= startX;i< x + maxX; i++){
 		for(var j= startY;j< y + maxY; j++){
 			//console.log('startx',i, 'starty',j, Math.pow(2, this._zoom))
-			console.log('startX===', i - startX - Math.floor(maxX))
+			//console.log('startX===', i - startX - Math.floor(maxX))
 			var tile = new Tile({
 				x:i,y:j,z:this._zoom, 
-				xpos:(i-startX - maxX) * 256 + 128, 
+				xpos:(i-startX - maxX) * 256 + pt.x % 256, 
 				ypos:(j-startY - maxY) * 256 + 128
 			});
 			this.loadTile( tile );
 		}
 	}
+	console.log("tile水平个数:", Math.pow(2,this._zoom));
+	console.log("center:",this._center, this._zoom)
 }
 
 Map.prototype.clear = function(){
@@ -210,10 +317,11 @@ function Tile( opt ){
 
 Tile.prototype.getSource = function( ){
 	var img = document.createElement('img');
-	img.src = this.getTileUrl( this.opt );
+	//img.src = this.getTileUrl( this.opt );
+	img.src ="about:blank"
 	return img;
 }
-Tile.prototype.getTileUrl = function( obj ){
+Tile.prototype.getTileUrl = function( obj ){	
 	if( this.url ){
 		return this.url.replace(/{x}/ig, obj.x).replace(/{y}/ig, obj.y).replace(/{z}/ig, obj.z);
 	}
