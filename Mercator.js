@@ -1,4 +1,22 @@
-var PI = Math.PI;
+/*
+ * Copyright (C) 2020 shareme.cn. All Rights Reserved.
+ *
+ * @author kyomic <kyomic@163.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+ var PI = Math.PI;
 /*
 WGS84：为一种大地坐标系，也是目前广泛使用的GPS全球卫星定位系统使用的坐标系。
 GCJ02：又称火星坐标系，是由中国国家测绘局制订的地理信息系统的坐标系统。由WGS84坐标系经加密后的坐标系。
@@ -11,9 +29,7 @@ TMS：开源产品的标准，Z的定义与谷歌相同；XY的原点在左下�
 QuadTree：微软Bing地图使用的编码规范，Z的定义与谷歌相同，同一层级的瓦片不用XY两个维度表示，而只用一个整数表示，该整数服从四叉树编码规则
 百度XYZ：Z从1开始，在最高级就把地图分为四块瓦片；XY的原点在经度为0纬度位0的位置，X从左向右，Y从下向上。
 */
-var Mercator = function(){
-
-}
+var Mercator = function(){}
 Mercator.toPixed = function( lon,lat  ){
 	var x = lon * Mercator.EARTH_HALF_C /180;
 	var y= Math.log(Math.tan((90+lat)*PI/360))/(PI/180);

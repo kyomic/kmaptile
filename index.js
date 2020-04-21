@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2020 shareme.cn. All Rights Reserved.
+ *
+ * @author kyomic <kyomic@163.com>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 /**
  * @constructor
  * @param {Map} map  地图实例
@@ -68,10 +85,6 @@ function Map( dom ){
 	this.tileSize = 256;
 	this.mapLayers = {};
 	this.initialize();
-
-	/**
-	 * 不同级别不同的分辨率
-	 */
 }
 Map.prototype.initialize = function(){
 	var earth_width = Mercator.EARTH_HALF_C;
@@ -317,41 +330,6 @@ Map.prototype.clear = function(){
 Map.prototype.loadTile = function( tile ){
 	this.getLayer().loadTile( tile );
 }
-/*
-Map.prototype._draw2 = function(){
-	var resolution = this.resolutions[ this._zoom ];
-
-	var x = this._center.x;
-	var y = this._center.y;
-	//resolution = 1;
-	//x = 200,y = 200;
-	var viewWidth = this.viewWidth;
-	var viewHeight = this.viewHeight;
-	console.log(this._center)
-	var viewBound = [
-		x - resolution*viewWidth/2, 
-		y - resolution*viewHeight/2, 
-		x + resolution*viewWidth/2,
-		y + resolution*viewHeight/2,
-	]
-	console.log("resolution", resolution, resolution*viewWidth/2)
-
-	console.log("viewBound",viewBound)
-	var bounds = [ - Mercator.EARTH_WIDTH, - Mercator.EARTH_WIDTH, Mercator.EARTH_WIDTH, Mercator.EARTH_WIDTH ]
-	console.log("bounds", bounds)
-	var startX = Math.floor(((viewBound[0] - bounds[0]) / resolution ) / 256);
-	var startY = Math.floor(((viewBound[1] - bounds[1]) / resolution) / 256);
-	var endX   = Math.floor(((viewBound[2] - bounds[2]) / resolution) / 256);
-	var endY   = Math.floor(((viewBound[3] - bounds[3]) / resolution) / 256);
-	console.log(startX,startY,endX,endY)
-
-	var startTileX = bounds[0]+ (startX * 256 * resolution);
-	var startTileY = bounds[3] - (startY * 256 * resolution);
-	var distanceX = (bounds[0] - startTileX) / resolution;
-	var distanceY = (startTileY - bounds[3]) / resolution
-	console.log("startTileX", startTileX, startTileY, distanceX,distanceY)
-}
-*/
 
 /**
  * @param {Object} opt 参数，如{url}
@@ -365,7 +343,6 @@ function Tile( opt ){
 	this.url = opt.url;
 	this._loading = false;
 }
-
 Tile.prototype.destroy = function(){
 	if( this._source ){
 		this._source.onerror = this._source.onload = function(){}
