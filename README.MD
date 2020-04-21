@@ -12,6 +12,8 @@
     map.centerAndZoom( new LonLat(116.40,39.90) );
 </script>
 ```
+https://kyomic.github.io/kmaptile/
+
 
 ### API文档
 
@@ -23,3 +25,4 @@ map.panTo(x,y)
 map.setLayer( option )
 
 ```
+
