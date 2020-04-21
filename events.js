@@ -35,6 +35,15 @@ utils.stringhash = function( str, len ){
     return result;
 
 }
+utils.offset = function( el ){
+  var x = 0,y = 0;
+  while( el && !isNaN( el.offsetLeft ) && !isNaN( el.offsetTop )){
+    x += el.offsetLeft - el.scrollLeft;
+    y += el.offsetTop - el.scrollTop;
+    el = el.offsetParent;
+  }
+  return {top:y, left:x};
+}
 /**
  * 判断dom是否在父dom中
  * @param {DOM} parent - 父dom
@@ -115,8 +124,8 @@ var mapdom = document.getElementById("map");
     layers.style.cssText = 'left:' + offsetX + 'px;top:' + offsetY + 'px'
   }
   var onDragEnd = function(e){
-    offsetX = e.clientX - startX;
-    offsetY = e.clientY - startY;
+    offsetX = startX - e.clientX;
+    offsetY = startY - e.clientY;
     if( draging ){
       map.panTo( offsetX, offsetY )      
     }
@@ -145,10 +154,19 @@ var mapdom = document.getElementById("map");
     console.log('wheel',e)
     var clientX = e.clientX;
     var clientY = e.clientY;
+    var pt = {x:clientX,y:clientY};
+    //pt = null;
     if( e.wheelDelta > 0){
-      map.zoomIn({x:clientX,y:clientY});
+      map.zoomIn(pt);
     }else{
-      map.zoomOut({x:clientX,y:clientY});
+      map.zoomOut(pt);
     }
   })
+  utils.delegate( mapdom, 'mousemove', '.layermask',function(e){
+    var offset = utils.offset( mapdom );
+    var clientX = e.clientX - offset.left;
+    var clientY = e.clientY - offset.top;
+    var pt = {x:clientX,y:clientY};
+    //map.getCursorLonLat( pt );
+  });
 })();
